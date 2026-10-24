@@ -1,0 +1,46 @@
+export type Lang = 'en' | 'ur';
+
+const ur: Record<string, string> = {
+  'About': 'تعارف',
+  'Services': 'خدمات',
+  'Events': 'تقریبات',
+  'Events & videos': 'تقریبات اور ویڈیوز',
+  'Articles': 'مضامین',
+  'Reviews': 'آراء',
+  'Contact': 'رابطہ',
+  'Book appointment': 'اپائنٹمنٹ بک کریں',
+  'Book clinic visit': 'کلینک وزٹ بک کریں',
+  'Video consult': 'ویڈیو مشورہ',
+  'Clinic visit': 'کلینک وزٹ',
+  'Follow-up': 'فالو اپ',
+  'years in practice': 'سال کا تجربہ',
+  'Patients guided': 'مریضوں کی رہنمائی',
+  'Years experience': 'سال کا تجربہ',
+  'Services & fees': 'خدمات اور فیس',
+  'Events, camps & knowledge-based videos': 'تقریبات، کیمپ اور معلوماتی ویڈیوز',
+  'Health articles': 'صحت سے متعلق مضامین',
+  'Read more': 'مزید پڑھیں',
+  'All articles': 'تمام مضامین',
+  'What patients say': 'مریضوں کی رائے',
+  'Clinic': 'کلینک',
+  'My appointment': 'میری اپائنٹمنٹ',
+  'Leave a review': 'اپنی رائے دیں',
+  'Achievements & awards': 'کامیابیاں اور اعزازات',
+  'Gallery': 'تصاویر',
+  'Clinics & timings': 'کلینک اور اوقات',
+  'Book here': 'یہاں بک کریں',
+  'Map': 'نقشہ',
+  'Online video consult': 'آن لائن ویڈیو مشورہ',
+  'From anywhere, on phone or computer': 'کہیں سے بھی، فون یا کمپیوٹر پر',
+  'Book video consult': 'ویڈیو مشورہ بک کریں',
+  'Verified patient': 'تصدیق شدہ مریض',
+  'Reply from': 'جواب از',
+  'Clinics': 'کلینکس',
+  'Patient rating': 'مریضوں کی ریٹنگ',
+  'Patient login': 'مریض لاگ ان',
+  'PMDC Reg.': 'پی ایم ڈی سی رجسٹریشن',
+};
+
+export function t(lang: Lang, s: string): string {
+  return lang === 'ur' ? ur[s] || s : s;
+}
