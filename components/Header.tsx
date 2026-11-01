@@ -34,7 +34,7 @@ export default function Header({ name, lang, bookingOpen = true }: { name: strin
         <button className="lang" onClick={switchLang} aria-label="Switch language">
           {lang === 'ur' ? 'English' : <span style={{ fontFamily: 'var(--urdu)' }}>اردو</span>}
         </button>
-        <Link href="/patient" className="btn ghost sm patient-link">{t(lang, signedIn ? 'My account' : 'Patient login')}</Link>
+        <Link href="/patient" className="btn ghost sm patient-link">{t(lang, 'Patient login')}</Link>
         {bookingOpen && <Link href="/book" className="btn sm">{t(lang, 'Book appointment')}</Link>}
       </div>
     </header>
