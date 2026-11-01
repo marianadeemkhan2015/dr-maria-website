@@ -314,9 +314,11 @@ button { cursor: pointer; }
 .kpi { padding: 14px 16px; }
 .kpi small { color: var(--muted); font-weight: 600; font-size: .8rem; }
 .kpi b { display: block; font-family: var(--display); font-size: 1.6rem; font-variant-numeric: tabular-nums; }
-.appt { display: grid; grid-template-columns: 110px 1fr auto; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line); align-items: start; }
+.appt { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 8px 14px; padding: 16px 0; border-bottom: 1px solid var(--line); align-items: start; }
+.appt > .actions { grid-column: 2; justify-content: flex-start; padding-top: 4px; }
+.appt > .actions .danger-ghost { margin-inline-start: auto; }
 .appt:last-child { border-bottom: 0; }
-@media (max-width: 640px) { .appt { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .appt { grid-template-columns: 1fr; } .appt > .actions { grid-column: 1; } }
 .appt .when { font-family: var(--mono); font-size: .84rem; }
 .actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .list-item { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
