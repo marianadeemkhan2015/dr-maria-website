@@ -57,12 +57,20 @@ export function useAlerts() {
       if (perm !== 'granted') { setState(perm === 'denied' ? 'blocked' : 'off'); return; }
       const reg = await registration();
       await navigator.serviceWorker.ready;
-      const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(VAPID_PUBLIC) as any });
+      const opts = { userVisibleOnly: true, applicationServerKey: keyBytes(VAPID_PUBLIC) as any };
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        try { sub = await reg.pushManager.subscribe(opts); }
+        catch { await new Promise(r => setTimeout(r, 1500)); sub = await reg.pushManager.subscribe(opts); } // the phone's push service sometimes fails once
+      }
       await save(sub);
       setState('on');
       toast('Booking alerts are on for this phone');
     } catch (e: any) {
-      toast('Could not turn on alerts: ' + (e?.message || 'try again'));
+      const pushProblem = /push service|AbortError/i.test(String(e?.message || e?.name));
+      toast(pushProblem
+        ? 'This phone’s notification service did not respond. Check that Chrome is allowed notifications and is not battery-restricted, turn off any VPN or ad-blocker, then try again.'
+        : 'Could not turn on alerts: ' + (e?.message || 'try again'));
     } finally { setBusy(false); }
   };
 
