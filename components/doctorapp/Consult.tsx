@@ -6,6 +6,7 @@ import { dayLabel, fmtPKR, label12, modeName, waLink } from '@/lib/util';
 import { useToast } from '../admin/Toast';
 import VisitFiles from '../admin/VisitFiles';
 import { Icon, STATUS } from './parts';
+import Reschedule, { doctorDelete, doctorMove, movedText } from '../Reschedule';
 
 const QUICK = ['Follow-up in 2 weeks', 'Walk 20 minutes after dinner', 'Drink 8–10 glasses of water', 'No sugar in tea', 'Dinner by 8 PM', 'Repeat lab tests before next visit'];
 
@@ -21,6 +22,7 @@ export default function Consult({ a, clinicName, close, reload }: { a: Appointme
   const [notes, setNotes] = useState(a.notes || '');
   const [saving, setSaving] = useState(false);
   const [sure, setSure] = useState<string | null>(null);
+  const [moving, setMoving] = useState(false);
   const dirty = tx !== (a.treatment || '') || rx !== (a.prescription || '') || notes !== (a.notes || '');
 
   useEffect(() => {
@@ -76,7 +78,7 @@ export default function Consult({ a, clinicName, close, reload }: { a: Appointme
         <button className="da-icon" onClick={close} aria-label="Back"><Icon name="back" /></button>
         <div style={{ minWidth: 0 }}>
           <b>{a.patient_name}</b>
-          <small>{dayLabel(a.day)} · {label12(String(a.time).slice(0, 5))}</small>
+          <small>{dayLabel(a.day)} · {label12(String(a.time).slice(0, 5))}{movedText(a.moved_from) ? ' · moved' : ''}</small>
         </div>
         <span className={`pill ${STATUS[a.status][0]}`}>{STATUS[a.status][1]}</span>
       </header>
@@ -92,7 +94,13 @@ export default function Consult({ a, clinicName, close, reload }: { a: Appointme
             <a className="btn ghost sm" href={`tel:${a.phone.replace(/[^\d+]/g, '')}`}><Icon name="phone" /> Call</a>
             <a className="btn ghost sm" href={waLink(a.phone)} target="_blank" rel="noreferrer"><Icon name="chat" /> WhatsApp</a>
             {a.status === 'pending' && <button className="btn sm" onClick={() => setStatus('confirmed', 'Confirmed')}>Confirm</button>}
+            {['pending', 'confirmed'].includes(a.status) && <button className="btn ghost sm" onClick={() => setMoving(m => !m)}><Icon name="cal" /> {moving ? 'Close' : 'Reschedule'}</button>}
           </div>
+          {movedText(a.moved_from) && <small className="moved">↻ {movedText(a.moved_from)}</small>}
+          {moving && <Reschedule clinicId={a.clinic_id} day={a.day} time={a.time} who="doctor"
+            tell={{ phone: a.phone, name: a.patient_name, code: a.code }}
+            onSave={async (d, t) => { const e = await doctorMove(a.id, { day: a.day, time: a.time }, d, t); if (!e) reload(); return e; }}
+            onClose={() => setMoving(false)} />}
         </section>
 
         <section className="da-sec">
@@ -157,6 +165,14 @@ export default function Consult({ a, clinicName, close, reload }: { a: Appointme
                 : <div className="da-actions"><button className="btn ghost sm" onClick={() => setSure('no_show')}>No-show</button><button className="btn ghost sm" onClick={() => setSure('cancel')}>Cancel appointment</button></div>}
           </section>
         )}
+
+        <section className="da-sec">
+          {sure === 'delete'
+            ? <div className="da-actions"><span>Delete this appointment for good? This cannot be undone.</span>
+                <button className="btn danger sm" onClick={async () => { const e = await doctorDelete(a.id, a.receipt_path); if (e) return toast(e); toast('Appointment deleted'); reload(); close(); }}>Yes, delete</button>
+                <button className="btn ghost sm" onClick={() => setSure(null)}>No</button></div>
+            : <div className="da-actions"><button className="btn sm danger-ghost" onClick={() => setSure('delete')}>Delete appointment</button></div>}
+        </section>
       </main>
 
       <footer className="da-savebar">

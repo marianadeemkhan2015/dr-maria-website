@@ -1,4 +1,5 @@
 'use client';
+import Reschedule, { movedText } from '../Reschedule';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { Session } from '@supabase/supabase-js';
@@ -161,7 +162,7 @@ function Portal({ me, setMe, email, doctorName, whatsapp }: { me: Patient; setMe
               <h2>Upcoming appointments</h2>
               {upcoming.length === 0
                 ? <p className="muted">No upcoming appointments. <Link href="/book">Book one</Link>.</p>
-                : upcoming.map(v => <UpcomingCard key={v.id} v={v} onChanged={() => { load(); say('Appointment cancelled'); }} whatsapp={whatsapp} />)}
+                : upcoming.map(v => <UpcomingCard key={v.id} v={v} onChanged={m => { load(); say(m); }} whatsapp={whatsapp} />)}
             </section>
             <div style={{ display: 'grid', gap: 14, alignContent: 'start' }}>
               <section className="card panel">
@@ -201,6 +202,7 @@ function Portal({ me, setMe, email, doctorName, whatsapp }: { me: Patient; setMe
                   {reports.filter(r => r.appointment_id === v.id).map(r => (
                     <button key={r.id} className="file" onClick={() => openFile(r)}><FileIcon /> {r.title}</button>
                   ))}
+                  <RemoveVisit id={v.id} onDone={() => { load(); say('Removed from your list'); }} />
                   {v.status === 'completed' && (v.reviewed
                     ? <p className="muted" style={{ fontSize: '.85rem' }}>✓ You reviewed this visit</p>
                     : <details><summary className="btn ghost sm" style={{ display: 'inline-flex' }}>Rate this visit</summary>
@@ -219,16 +221,42 @@ function Portal({ me, setMe, email, doctorName, whatsapp }: { me: Patient; setMe
   );
 }
 
+function RemoveVisit({ id, onDone }: { id: string; onDone: () => void }) {
+  const [sure, setSure] = useState(false);
+  const [err, setErr] = useState('');
+  const go = async () => {
+    const { data, error } = await browserClient().rpc('hide_my_appointment', { p_id: id });
+    if (error || !data) return setErr('Could not remove this visit.');
+    onDone();
+  };
+  if (!sure) return <div><button className="btn ghost sm" style={{ color: 'var(--muted)' }} onClick={() => setSure(true)}>Delete from my list</button></div>;
+  return (
+    <div className="alert" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', fontSize: '.88rem' }}>
+      Remove this visit from your account? The clinic keeps its own record.
+      <button className="btn danger sm" onClick={go}>Yes, delete</button>
+      <button className="btn ghost sm" onClick={() => setSure(false)}>Keep</button>
+      {err && <span>{err}</span>}
+    </div>
+  );
+}
+
 function FileIcon() {
   return <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" /><path d="M14 3v6h6" /></svg>;
 }
 
-function UpcomingCard({ v, onChanged, whatsapp }: { v: Visit; onChanged: () => void; whatsapp: string }) {
+function UpcomingCard({ v, onChanged, whatsapp }: { v: Visit; onChanged: (msg: string) => void; whatsapp: string }) {
   const db = browserClient();
   const [sure, setSure] = useState(false);
+  const [moving, setMoving] = useState(false);
   const cancel = async () => {
     const { data } = await db.rpc('cancel_appointment', { p_code: v.code, p_phone: v.phone });
-    if (data) onChanged();
+    if (data) onChanged('Appointment cancelled');
+  };
+  const move = async (day: string, time: string) => {
+    const { error } = await db.rpc('reschedule_appointment', { p_code: v.code, p_phone: v.phone, p_day: day, p_time: time });
+    if (error) return error.message;
+    onChanged('Appointment moved. The clinic will confirm the new time.');
+    return null;
   };
   return (
     <div className="list-item">
@@ -237,13 +265,16 @@ function UpcomingCard({ v, onChanged, whatsapp }: { v: Visit; onChanged: () => v
         <span className={`pill ${STATUS[v.status][0]}`}>{STATUS[v.status][1]}</span>
       </div>
       <p className="muted" style={{ fontSize: '.9rem' }}>{modeName[v.mode]} · {v.clinic_name ? `${v.clinic_name}, ${v.clinic_address}` : 'Video call'} · {fmtPKR(v.fee)} · <span className="mono">{v.code}</span></p>
+      {movedText(v.moved_from) && <span className="moved">↻ {movedText(v.moved_from)}</span>}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {v.video_room && <Link className="btn sm accent" href={`/consult/${v.video_room}?code=${v.code}`}>Join video call</Link>}
         {v.clinic_map && <a className="btn sm ghost" href={v.clinic_map} target="_blank" rel="noreferrer">Map</a>}
         {whatsapp && <a className="btn sm ghost" href={waLink(whatsapp, `About my appointment ${v.code}`)} target="_blank" rel="noreferrer">Message clinic</a>}
-        {!sure ? <button className="btn sm ghost" onClick={() => setSure(true)}>Cancel</button>
+        {!moving && <button className="btn sm ghost" onClick={() => { setMoving(true); setSure(false); }}>Reschedule</button>}
+        {!sure ? <button className="btn sm ghost" onClick={() => { setSure(true); setMoving(false); }}>Cancel</button>
           : <><button className="btn sm danger" onClick={cancel}>Yes, cancel</button><button className="btn sm ghost" onClick={() => setSure(false)}>Keep</button></>}
       </div>
+      {moving && <Reschedule clinicId={v.clinic_id} day={v.day} time={v.time} who="patient" onSave={move} onClose={() => setMoving(false)} />}
     </div>
   );
 }

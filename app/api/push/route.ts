@@ -29,10 +29,15 @@ export async function POST(req: Request) {
   if (secret !== null) {
     if (!process.env.PUSH_SECRET || secret !== process.env.PUSH_SECRET) return reply({ error: 'Not allowed' }, 401);
     subs = Array.isArray(body.subs) ? body.subs : [];
-    const when = `${dayLabel(String(body.day))}, ${label12(String(body.time).slice(0, 5))}`;
+    const at = (d: unknown, t: unknown) => `${dayLabel(String(d))}, ${label12(String(t).slice(0, 5))}`;
+    const who = String(body.name || 'Patient').slice(0, 60);
+    const where = body.video ? 'Video consult' : body.clinic || 'Clinic visit';
+    const kind = body.kind || 'new';
     payload = {
-      title: `New booking: ${String(body.name || 'Patient').slice(0, 60)}`,
-      body: `${body.video ? 'Video consult' : body.clinic || 'Clinic visit'} · ${when}`,
+      title: kind === 'cancel' ? `Cancelled: ${who}` : kind === 'move' ? `Rescheduled: ${who}` : `New booking: ${who}`,
+      body: kind === 'cancel' ? `${where} · ${at(body.day, body.time)} is free again`
+        : kind === 'move' ? `${where} · now ${at(body.day, body.time)} (was ${at(body.from_day, body.from_time)})`
+          : `${where} · ${at(body.day, body.time)}`,
       pending: Number(body.pending) || 0,
     };
   } else {

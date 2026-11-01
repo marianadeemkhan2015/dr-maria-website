@@ -5,6 +5,7 @@ import type { Appointment, Clinic, Mode } from '@/lib/types';
 import { addDays, dayLabel, fmtPKR, label12, modeName, pkToday, waLink } from '@/lib/util';
 import { useToast } from './Toast';
 import VisitFiles from './VisitFiles';
+import Reschedule, { doctorDelete, doctorMove, movedText } from '../Reschedule';
 
 type View = 'today' | 'upcoming' | 'past' | 'cancelled';
 const STATUS: Record<Appointment['status'], [string, string]> = {
@@ -20,6 +21,7 @@ export default function Appointments() {
   const [kpi, setKpi] = useState({ today: 0, week: 0, newCount: 0, month: 0 });
   const [open, setOpen] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [moving, setMoving] = useState<string | null>(null);
   const today = pkToday();
 
   const [clinics, setClinics] = useState<Clinic[]>([]);
@@ -72,6 +74,12 @@ export default function Appointments() {
     if (error) toast('Could not save: ' + error.message); else { toast(msg); load(); }
   };
 
+  const remove = async (a: Appointment) => {
+    if (!window.confirm(`Delete the appointment of ${a.patient_name} on ${dayLabel(a.day)} at ${label12(String(a.time).slice(0, 5))} for good?\n\nThis cannot be undone. Use Cancel instead if you only want to free the time.`)) return;
+    const e = await doctorDelete(a.id, a.receipt_path);
+    if (e) toast(e); else { toast('Appointment deleted'); load(); }
+  };
+
   return (
     <div style={{ display: 'grid', gap: 14 }}>
       <div className="kpis">
@@ -114,6 +122,7 @@ export default function Appointments() {
                         : <button className="btn sm" onClick={() => update(a.id, { paid: true, ...(a.status === 'pending' ? { status: 'confirmed' } : {}) }, 'Payment verified')}>Mark paid</button>}
                     </div>
                   )}
+                  {movedText(a.moved_from) && <div className="moved">↻ {movedText(a.moved_from)}</div>}
                   {a.reason && <div style={{ fontSize: '.9rem' }}>“{a.reason}”</div>}
                   {open === a.id && <Notes a={a} onSaved={load} />}
                 </div>
@@ -125,9 +134,17 @@ export default function Appointments() {
                   {['pending', 'confirmed'].includes(a.status) && <>
                     <button className="btn sm ghost" onClick={() => update(a.id, { status: 'completed' }, 'Marked done')}>Done</button>
                     <button className="btn sm ghost" onClick={() => update(a.id, { status: 'no_show' }, 'Marked no-show')}>No-show</button>
+                    <button className="btn sm ghost" onClick={() => setMoving(moving === a.id ? null : a.id)}>{moving === a.id ? 'Close' : 'Reschedule'}</button>
                     <button className="btn sm ghost" onClick={() => update(a.id, { status: 'cancelled' }, 'Cancelled, slot is free again')}>Cancel</button>
                   </>}
+                  <button className="btn sm danger-ghost" onClick={() => remove(a)}>Delete</button>
                 </div>
+                {moving === a.id && <div style={{ gridColumn: '1 / -1', minWidth: 0 }}>
+                  <Reschedule clinicId={a.clinic_id} day={a.day} time={a.time} who="doctor"
+                    tell={{ phone: a.phone, name: a.patient_name, code: a.code }}
+                    onSave={(d, t) => doctorMove(a.id, { day: a.day, time: a.time }, d, t)}
+                    onClose={() => { setMoving(null); load(); }} />
+                </div>}
               </div>
             ))}
           </div>

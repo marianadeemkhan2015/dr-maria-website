@@ -472,3 +472,9 @@ details[open] > summary { margin-bottom: 8px; }
 .da-install > div { display: grid; gap: 2px; flex: 1; min-width: 0; }
 .da-install .btn { flex: none; }
 .da-install-x { flex: none; width: 32px; height: 32px; border-radius: 99px; border: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 1.1rem; line-height: 1; cursor: pointer; }
+.resched { display: grid; gap: 10px; margin-top: 10px; padding: 14px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--line); min-width: 0; }
+.resched .days { max-width: 100%; }
+.btn.danger-ghost { background: transparent; color: #B42318; border: 1.5px solid color-mix(in srgb, #B42318 35%, transparent); }
+.moved { font-size: .8rem; color: var(--muted); }
+.da-body, .da-hero { grid-template-columns: minmax(0, 1fr); }
+.resched { max-width: 100%; }

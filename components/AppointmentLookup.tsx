@@ -3,8 +3,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { browserClient, isConfigured } from '@/lib/supabase';
 import { dayLabel, fmtPKR, label12, modeName, waLink } from '@/lib/util';
+import Reschedule, { movedText } from './Reschedule';
 
-type Appt = { code: string; mode: 'clinic' | 'video' | 'followup'; day: string; time: string; status: string; patient_name: string; video_room: string | null; prescription: string | null; fee: number; payment_method: string | null; paid: boolean; clinic_name: string | null; clinic_address: string | null; clinic_map: string | null; reviewed: boolean };
+type Appt = { code: string; mode: 'clinic' | 'video' | 'followup'; day: string; time: string; status: string; patient_name: string; video_room: string | null; prescription: string | null; fee: number; payment_method: string | null; paid: boolean; clinic_name: string | null; clinic_address: string | null; clinic_map: string | null; reviewed: boolean; clinic_id: string | null; moved_from: string | null };
 const statusText: Record<string, [string, string]> = {
   pending: ['amber', 'Booked, awaiting confirmation'], confirmed: ['green', 'Confirmed'], completed: ['grey', 'Completed'],
   cancelled: ['red', 'Cancelled'], no_show: ['red', 'Missed'],
@@ -17,10 +18,12 @@ export default function AppointmentLookup({ whatsapp }: { whatsapp: string }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [moving, setMoving] = useState(false);
+  const [note, setNote] = useState('');
 
   const find = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    setError(''); setAppt(null); setConfirmCancel(false);
+    setError(''); setAppt(null); setConfirmCancel(false); setMoving(false); setNote('');
     if (!isConfigured) return setError('The site is not connected to its database yet.');
     setBusy(true);
     const { data, error } = await browserClient().rpc('get_appointment', { p_code: code, p_phone: phone });
@@ -56,6 +59,8 @@ export default function AppointmentLookup({ whatsapp }: { whatsapp: string }) {
             {dayLabel(appt.day, { weekday: 'long', day: 'numeric', month: 'long' })}, {label12(String(appt.time).slice(0, 5))} · {fmtPKR(appt.fee)}
             {appt.clinic_name && <><br /><b>{appt.clinic_name}</b>{appt.clinic_address && `, ${appt.clinic_address}`}
               {appt.clinic_map && <> · <a href={appt.clinic_map} target="_blank" rel="noreferrer">Map</a></>}</>}</p>
+          {movedText(appt.moved_from) && <span className="moved">↻ {movedText(appt.moved_from)}</span>}
+          {note && <p className="alert ok">{note}</p>}
           {appt.payment_method && appt.payment_method !== 'Pay at clinic' && (
             <p><span className={`pill ${appt.paid ? 'green' : 'amber'}`}>{appt.paid ? 'Payment received' : 'Receipt sent, being checked'}</span> <span className="muted">{appt.payment_method}</span></p>
           )}
@@ -68,8 +73,16 @@ export default function AppointmentLookup({ whatsapp }: { whatsapp: string }) {
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {appt.video_room && ['pending', 'confirmed'].includes(appt.status) && <Link className="btn" href={`/consult/${appt.video_room}?code=${appt.code}`}>Join video call</Link>}
             {whatsapp && <a className="btn ghost" href={waLink(whatsapp, `About my appointment ${appt.code}`)} target="_blank" rel="noreferrer">Message clinic</a>}
-            {['pending', 'confirmed'].includes(appt.status) && !confirmCancel && <button className="btn ghost" onClick={() => setConfirmCancel(true)}>Cancel appointment</button>}
+            {['pending', 'confirmed'].includes(appt.status) && !moving && <button className="btn ghost" onClick={() => { setMoving(true); setConfirmCancel(false); }}>Change date / time</button>}
+            {['pending', 'confirmed'].includes(appt.status) && !confirmCancel && <button className="btn ghost" onClick={() => { setConfirmCancel(true); setMoving(false); }}>Cancel appointment</button>}
           </div>
+          {moving && <Reschedule clinicId={appt.clinic_id} day={appt.day} time={appt.time} who="patient" onClose={() => setMoving(false)}
+            onSave={async (d, t) => {
+              const { error } = await browserClient().rpc('reschedule_appointment', { p_code: code, p_phone: phone, p_day: d, p_time: t });
+              if (error) return error.message;
+              await find(); setNote('Appointment moved. The clinic will confirm the new time.');
+              return null;
+            }} />}
           {confirmCancel && (
             <div className="alert" style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
               Cancel this appointment? The time will be given to another patient.
