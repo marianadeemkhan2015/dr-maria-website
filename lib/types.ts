@@ -68,7 +68,7 @@ export type Appointment = {
   payment_method: string | null; fee: number | null; receipt_path: string | null; paid: boolean;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'no_show';
   video_room: string | null; notes: string | null; prescription: string | null; created_at: string; clinic_id: string | null;
-  treatment: string | null; patient_user_id: string | null; moved_from?: string | null; patient_hidden?: boolean;
+  treatment: string | null; patient_user_id: string | null; moved_from?: string | null; patient_hidden?: boolean; confirmed_at?: string | null; paid_at?: string | null;
 };
 export type Mode = 'clinic' | 'video' | 'followup';
 
@@ -79,4 +79,5 @@ export type Visit = {
   reason: string | null; phone: string; treatment: string | null; prescription: string | null; fee: number | null; paid: boolean; payment_method: string | null;
   video_room: string | null; clinic_name: string | null; clinic_address: string | null; clinic_map: string | null; reviewed: boolean;
   clinic_id: string | null; moved_from: string | null;
+  confirmed_at?: string | null; paid_at?: string | null; has_receipt?: boolean;
 };

@@ -480,3 +480,7 @@ details[open] > summary { margin-bottom: 8px; }
 .moved { font-size: .8rem; color: var(--muted); }
 .da-body, .da-hero { grid-template-columns: minmax(0, 1fr); }
 .resched { max-width: 100%; }
+.appt-status { display: grid; gap: 4px; font-size: .9rem; }
+.appt-status p { margin: 0; }
+.appt-status .ok { color: var(--brand); font-weight: 600; }
+.appt-status .wait { color: #9A6700; }

@@ -6,6 +6,11 @@ export const fmtPKR = (n: number | null | undefined) => 'PKR ' + Number(n || 0).
 export function pkToday(): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Karachi' }).format(new Date());
 }
+/** "Sun 1 Nov, 10:30 PM" in Pakistan time, from a database timestamp. */
+export function pkDateTime(ts: string): string {
+  return new Date(ts).toLocaleString('en-GB', { timeZone: 'Asia/Karachi', weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })
+    .replace(/\b(am|pm)\b/, m => m.toUpperCase()).replace(' at ', ', ');
+}
 /** Minutes since midnight right now in Pakistan. */
 export function pkNowMinutes(): number {
   const p = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Karachi', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date());

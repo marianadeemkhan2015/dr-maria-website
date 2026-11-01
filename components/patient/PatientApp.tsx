@@ -1,5 +1,6 @@
 'use client';
 import Reschedule, { movedText } from '../Reschedule';
+import ApptStatus from '../ApptStatus';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { Session } from '@supabase/supabase-js';
@@ -10,7 +11,7 @@ import { VisitReview } from '../AppointmentLookup';
 
 type Tab = 'home' | 'visits' | 'reports' | 'profile';
 const STATUS: Record<string, [string, string]> = {
-  pending: ['amber', 'Booked'], confirmed: ['green', 'Confirmed'], completed: ['grey', 'Completed'], cancelled: ['red', 'Cancelled'], no_show: ['red', 'Missed'],
+  pending: ['amber', 'Awaiting confirmation'], confirmed: ['green', 'Confirmed ✓'], completed: ['grey', 'Completed'], cancelled: ['red', 'Cancelled'], no_show: ['red', 'Missed'],
 };
 
 export default function PatientApp({ doctorName, whatsapp }: { doctorName: string; whatsapp: string }) {
@@ -162,7 +163,7 @@ function Portal({ me, setMe, email, doctorName, whatsapp }: { me: Patient; setMe
               <h2>Upcoming appointments</h2>
               {upcoming.length === 0
                 ? <p className="muted">No upcoming appointments. <Link href="/book">Book one</Link>.</p>
-                : upcoming.map(v => <UpcomingCard key={v.id} v={v} onChanged={m => { load(); say(m); }} whatsapp={whatsapp} />)}
+                : upcoming.map(v => <UpcomingCard key={v.id} v={v} onChanged={m => { load(); say(m); }} whatsapp={whatsapp} doctorName={doctorName} />)}
             </section>
             <div style={{ display: 'grid', gap: 14, alignContent: 'start' }}>
               <section className="card panel">
@@ -244,7 +245,7 @@ function FileIcon() {
   return <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" /><path d="M14 3v6h6" /></svg>;
 }
 
-function UpcomingCard({ v, onChanged, whatsapp }: { v: Visit; onChanged: (msg: string) => void; whatsapp: string }) {
+function UpcomingCard({ v, onChanged, whatsapp, doctorName }: { v: Visit; onChanged: (msg: string) => void; whatsapp: string; doctorName: string }) {
   const db = browserClient();
   const [sure, setSure] = useState(false);
   const [moving, setMoving] = useState(false);
@@ -266,6 +267,7 @@ function UpcomingCard({ v, onChanged, whatsapp }: { v: Visit; onChanged: (msg: s
       </div>
       <p className="muted" style={{ fontSize: '.9rem' }}>{modeName[v.mode]} · {v.clinic_name ? `${v.clinic_name}, ${v.clinic_address}` : 'Video call'} · {fmtPKR(v.fee)} · <span className="mono">{v.code}</span></p>
       {movedText(v.moved_from) && <span className="moved">↻ {movedText(v.moved_from)}</span>}
+      <ApptStatus a={v} doctorName={doctorName} />
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {v.video_room && <Link className="btn sm accent" href={`/consult/${v.video_room}?code=${v.code}`}>Join video call</Link>}
         {v.clinic_map && <a className="btn sm ghost" href={v.clinic_map} target="_blank" rel="noreferrer">Map</a>}

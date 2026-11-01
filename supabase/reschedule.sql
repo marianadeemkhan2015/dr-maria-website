@@ -2,6 +2,21 @@
 alter table appointments add column if not exists patient_hidden boolean not null default false; -- patient removed it from their list (the doctor still has it)
 alter table appointments add column if not exists moved_from timestamp;                          -- previous date and time after a reschedule
 alter table appointments add column if not exists moves int not null default 0;                  -- how often the patient has moved it
+alter table appointments add column if not exists confirmed_at timestamptz;                      -- when the doctor confirmed it
+alter table appointments add column if not exists paid_at timestamptz;                           -- when the doctor marked the payment received
+
+-- Record when an appointment is confirmed and when its payment is marked received.
+-- Moving it back to "New" (e.g. a patient reschedule) clears the confirmation.
+create or replace function stamp_appointment() returns trigger language plpgsql as $$
+begin
+  if new.status = 'confirmed' and (tg_op = 'INSERT' or old.status is distinct from 'confirmed') then new.confirmed_at := now(); end if;
+  if new.status = 'pending' then new.confirmed_at := null; end if;
+  if new.paid and (tg_op = 'INSERT' or not old.paid) then new.paid_at := now(); end if;
+  if not new.paid then new.paid_at := null; end if;
+  return new;
+end $$;
+drop trigger if exists stamp_appointment on appointments;
+create trigger stamp_appointment before insert or update on appointments for each row execute function stamp_appointment();
 
 -- Checks a new time against the doctor's hours, days off and booking window.
 create or replace function check_slot(p_day date, p_time time, p_clinic uuid) returns void
@@ -67,6 +82,7 @@ language sql stable security definer set search_path = public as $$
   select coalesce(json_agg(row_to_json(h) order by h.day desc, h.time desc), '[]'::json) from (
     select a.id, a.code, a.mode, a.day, a.time, a.status, a.patient_name, a.booking_for, a.reason, a.phone,
            a.treatment, a.prescription, a.fee, a.paid, a.payment_method, a.video_room, a.clinic_id, a.moved_from,
+           a.confirmed_at, a.paid_at, (a.receipt_path is not null) as has_receipt,
            c.name as clinic_name, c.address as clinic_address, c.map_link as clinic_map,
            exists (select 1 from reviews r where r.appointment_id = a.id) as reviewed
     from appointments a left join clinics c on c.id = a.clinic_id
@@ -81,6 +97,7 @@ language sql stable security definer set search_path = public as $$
                            'prescription', a.prescription, 'fee', a.fee,
                            'payment_method', a.payment_method, 'paid', a.paid,
                            'clinic_id', a.clinic_id, 'moved_from', a.moved_from,
+                           'confirmed_at', a.confirmed_at, 'paid_at', a.paid_at, 'has_receipt', a.receipt_path is not null,
                            'clinic_name', c.name, 'clinic_address', c.address, 'clinic_map', c.map_link,
                            'reviewed', exists (select 1 from reviews r where r.appointment_id = a.id))
   from appointments a left join clinics c on c.id = a.clinic_id

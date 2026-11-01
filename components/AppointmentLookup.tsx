@@ -4,14 +4,15 @@ import Link from 'next/link';
 import { browserClient, isConfigured } from '@/lib/supabase';
 import { dayLabel, fmtPKR, label12, modeName, waLink } from '@/lib/util';
 import Reschedule, { movedText } from './Reschedule';
+import ApptStatus from './ApptStatus';
 
-type Appt = { code: string; mode: 'clinic' | 'video' | 'followup'; day: string; time: string; status: string; patient_name: string; video_room: string | null; prescription: string | null; fee: number; payment_method: string | null; paid: boolean; clinic_name: string | null; clinic_address: string | null; clinic_map: string | null; reviewed: boolean; clinic_id: string | null; moved_from: string | null };
+type Appt = { code: string; mode: 'clinic' | 'video' | 'followup'; day: string; time: string; status: string; patient_name: string; video_room: string | null; prescription: string | null; fee: number; payment_method: string | null; paid: boolean; clinic_name: string | null; clinic_address: string | null; clinic_map: string | null; reviewed: boolean; clinic_id: string | null; moved_from: string | null; confirmed_at?: string | null; paid_at?: string | null; has_receipt?: boolean };
 const statusText: Record<string, [string, string]> = {
   pending: ['amber', 'Booked, awaiting confirmation'], confirmed: ['green', 'Confirmed'], completed: ['grey', 'Completed'],
   cancelled: ['red', 'Cancelled'], no_show: ['red', 'Missed'],
 };
 
-export default function AppointmentLookup({ whatsapp }: { whatsapp: string }) {
+export default function AppointmentLookup({ whatsapp, doctorName = 'the doctor' }: { whatsapp: string; doctorName?: string }) {
   const [code, setCode] = useState('');
   const [phone, setPhone] = useState('');
   const [appt, setAppt] = useState<Appt | null>(null);
@@ -61,9 +62,7 @@ export default function AppointmentLookup({ whatsapp }: { whatsapp: string }) {
               {appt.clinic_map && <> · <a href={appt.clinic_map} target="_blank" rel="noreferrer">Map</a></>}</>}</p>
           {movedText(appt.moved_from) && <span className="moved">↻ {movedText(appt.moved_from)}</span>}
           {note && <p className="alert ok">{note}</p>}
-          {appt.payment_method && appt.payment_method !== 'Pay at clinic' && (
-            <p><span className={`pill ${appt.paid ? 'green' : 'amber'}`}>{appt.paid ? 'Payment received' : 'Receipt sent, being checked'}</span> <span className="muted">{appt.payment_method}</span></p>
-          )}
+          <ApptStatus a={appt} doctorName={doctorName} />
           {appt.prescription && (
             <div className="alert ok" style={{ whiteSpace: 'pre-wrap' }}><b>Doctor’s advice / prescription</b><br />{appt.prescription}</div>
           )}

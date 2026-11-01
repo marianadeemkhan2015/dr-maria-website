@@ -13,7 +13,7 @@ export default async function Page() {
       <main className="wrap" style={{ paddingBlock: '32px 64px', maxWidth: 640 }}>
         <p className="eyebrow">My appointment</p>
         <h1 style={{ fontSize: 'clamp(1.8rem,4vw,2.4rem)', marginBottom: 18 }}>Check, join or cancel</h1>
-        <AppointmentLookup whatsapp={s.whatsapp} />
+        <AppointmentLookup whatsapp={s.whatsapp} doctorName={s.doctor_name} />
       </main>
     </>
   );
