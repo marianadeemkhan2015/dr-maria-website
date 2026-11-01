@@ -467,3 +467,8 @@ details[open] > summary { margin-bottom: 8px; }
 .da .toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
 .da-alert-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; margin-bottom: 12px; border-radius: 14px; background: var(--brand-soft); border: 1px solid var(--line); font-size: .9rem; }
 .da-alert-banner .btn { flex: none; }
+.da-install { position: relative; z-index: 40; display: flex; align-items: center; gap: 12px; padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px; background: var(--surface); border-bottom: 1px solid var(--line); box-shadow: 0 4px 14px rgba(16, 41, 43, .08); font-size: .88rem; }
+.da-install img { border-radius: 10px; flex: none; }
+.da-install > div { display: grid; gap: 2px; flex: 1; min-width: 0; }
+.da-install .btn { flex: none; }
+.da-install-x { flex: none; width: 32px; height: 32px; border-radius: 99px; border: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 1.1rem; line-height: 1; cursor: pointer; }

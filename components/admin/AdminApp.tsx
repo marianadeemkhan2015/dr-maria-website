@@ -17,6 +17,7 @@ import Gallery from './Gallery';
 import Patients from './Patients';
 import FooterSettings from './FooterSettings';
 import { ToastProvider } from './Toast';
+import { GetDoctorAppBanner, GetDoctorAppLink } from './GetDoctorApp';
 
 const TABS = [
   ['appointments', 'Appointments'],
@@ -103,12 +104,12 @@ function Shell({ children, email, onSignOut }: { children: React.ReactNode; emai
         <div className="wrap">
           <span className="brand">Doctor panel</span>
           <Link href="/" className="btn ghost sm" target="_blank">View website ↗</Link>
-          <Link href="/doctor" className="btn ghost sm">Doctor app</Link>
+          {email && <GetDoctorAppLink />}
           {email && <span className="muted" style={{ fontSize: '.85rem' }}>{email}</span>}
           {onSignOut && <button className="btn ghost sm" onClick={onSignOut}>Sign out</button>}
         </div>
       </header>
-      <main className="wrap" style={{ paddingTop: 8 }}>{children}</main>
+      <main className="wrap" style={{ paddingTop: 8 }}>{email && <GetDoctorAppBanner />}{children}</main>
     </>
   );
 }
