@@ -39,6 +39,7 @@ const ur: Record<string, string> = {
   'Patient rating': 'مریضوں کی ریٹنگ',
   'Patient login': 'مریض لاگ ان',
   'PMDC Reg.': 'پی ایم ڈی سی رجسٹریشن',
+  'My account': 'میرا اکاؤنٹ',
 };
 
 export function t(lang: Lang, s: string): string {
