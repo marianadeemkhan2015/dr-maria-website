@@ -465,3 +465,5 @@ details[open] > summary { margin-bottom: 8px; }
 .da-savebar .btn { padding-inline: 10px; }
 .da-savebar .btn svg { width: 18px; height: 18px; }
 .da .toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+.da-alert-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; margin-bottom: 12px; border-radius: 14px; background: var(--brand-soft); border: 1px solid var(--line); font-size: .9rem; }
+.da-alert-banner .btn { flex: none; }

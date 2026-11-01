@@ -8,6 +8,7 @@ import { ToastProvider, useToast } from '../admin/Toast';
 import Consult from './Consult';
 import { ApptCard, Icon } from './parts';
 import PatientsTab from './PatientsTab';
+import { AlertsBanner, AlertsSettings, useAlerts, useIconBadge } from './Alerts';
 
 type Tab = 'today' | 'schedule' | 'patients' | 'more';
 type Filter = 'all' | 'clinic' | 'video';
@@ -117,6 +118,10 @@ function Main({ email }: { email: string }) {
   const open = (rows || []).find(a => a.id === openId) || null;
   const toCheck = active.filter(a => a.receipt_path && !a.paid).length;
   const hour = Math.floor(now / 60);
+  const waiting = active.filter(a => a.status === 'pending' && a.day >= today).length;
+  const attention = active.filter(a => (a.status === 'pending' && a.day >= today) || (a.receipt_path && !a.paid)).length;
+  useIconBadge(rows === null ? 0 : waiting);
+  const alerts = useAlerts();
 
   const toggle = async (k: 'video_open' | 'booking_open') => {
     if (!settings) return;
@@ -146,6 +151,7 @@ function Main({ email }: { email: string }) {
       <main className="da-body">
         {rows === null ? <p className="muted">Loading appointments…</p> : <>
           {tab === 'today' && <>
+            <AlertsBanner a={alerts} />
             <div className="da-kpis">
               <div><b>{todays.length}</b><span>Today</span></div>
               <div><b>{todays.filter(a => !isVideo(a)).length}</b><span>In person</span></div>
@@ -208,6 +214,7 @@ function Main({ email }: { email: string }) {
             <div style={{ display: 'grid', gap: 12 }}>
               <h2 className="da-h2">Settings</h2>
               <label className="toggle">Video consults<input type="checkbox" className="switch" checked={settings.video_open} onChange={() => toggle('video_open')} /></label>
+              <AlertsSettings a={alerts} />
               <label className="toggle">Accept online bookings<input type="checkbox" className="switch" checked={settings.booking_open} onChange={() => toggle('booking_open')} /></label>
               <a className="da-row" href="/admin">Full doctor panel<span>Profile, fees, hours, articles, reviews →</span></a>
               <a className="da-row" href="/" target="_blank" rel="noreferrer">View my website<span>→</span></a>
@@ -222,7 +229,7 @@ function Main({ email }: { email: string }) {
       <nav className="da-tabs" aria-label="Doctor app">
         {([['today', 'Today', 'today'], ['schedule', 'Schedule', 'cal'], ['patients', 'Patients', 'users'], ['more', 'More', 'more']] as [Tab, string, string][]).map(([k, l, ic]) => (
           <button key={k} aria-current={tab === k} onClick={() => setTab(k)}>
-            <Icon name={ic} />{l}{k === 'today' && toCheck > 0 && <i className="da-badge">{toCheck}</i>}
+            <Icon name={ic} />{l}{k === 'today' && attention > 0 && <i className="da-badge">{attention}</i>}
           </button>
         ))}
       </nav>

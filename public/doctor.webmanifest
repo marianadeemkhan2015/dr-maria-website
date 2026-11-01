@@ -1,6 +1,6 @@
 {
-  "name": "Doctor app",
-  "short_name": "Doctor",
+  "name": "Dr. Maria – Doctor app",
+  "short_name": "Dr. Maria",
   "description": "Appointments and consultations, in person and by video.",
   "start_url": "/doctor",
   "scope": "/doctor",
@@ -9,8 +9,24 @@
   "background_color": "#F3F6F4",
   "theme_color": "#0A7464",
   "icons": [
-    { "src": "/icons/doctor-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icons/doctor-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/icons/doctor-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
-  ]
+    {
+      "src": "/icons/doctor-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/doctor-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/doctor-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "id": "/doctor"
 }

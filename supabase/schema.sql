@@ -366,7 +366,7 @@ create or replace function book_appointment(
   p_receipt text default null,
   p_clinic uuid default null          -- clinic visits and clinic follow-ups; null = video
 ) returns json
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, extensions as $$
 declare
   s settings%rowtype;
   v_wd int := extract(dow from p_day);
@@ -560,12 +560,14 @@ end $$;
 
 -- ---------- Photo storage ----------
 insert into storage.buckets (id, name, public) values ('media', 'media', true) on conflict (id) do nothing;
+drop policy if exists "media admin read" on storage.objects;
+create policy "media admin read" on storage.objects for select to authenticated using (bucket_id = 'media' and public.is_admin());
 drop policy if exists "media admin insert" on storage.objects;
-create policy "media admin insert" on storage.objects for insert to authenticated with check (bucket_id = 'media' and is_admin());
+create policy "media admin insert" on storage.objects for insert to authenticated with check (bucket_id = 'media' and public.is_admin());
 drop policy if exists "media admin update" on storage.objects;
-create policy "media admin update" on storage.objects for update to authenticated using (bucket_id = 'media' and is_admin());
+create policy "media admin update" on storage.objects for update to authenticated using (bucket_id = 'media' and public.is_admin()) with check (bucket_id = 'media' and public.is_admin());
 drop policy if exists "media admin delete" on storage.objects;
-create policy "media admin delete" on storage.objects for delete to authenticated using (bucket_id = 'media' and is_admin());
+create policy "media admin delete" on storage.objects for delete to authenticated using (bucket_id = 'media' and public.is_admin());
 
 -- Payment receipts: private bucket. Patients can upload (images or PDF, max 5 MB) but never read;
 -- only the doctor and staff can view them.
@@ -576,9 +578,9 @@ drop policy if exists "receipt upload" on storage.objects;
 create policy "receipt upload" on storage.objects for insert to anon, authenticated
   with check (bucket_id = 'receipts' and name ~ '^[0-9a-f-]{36}\.(jpg|jpeg|png|webp|pdf)$');
 drop policy if exists "receipt admin read" on storage.objects;
-create policy "receipt admin read" on storage.objects for select to authenticated using (bucket_id = 'receipts' and is_admin());
+create policy "receipt admin read" on storage.objects for select to authenticated using (bucket_id = 'receipts' and public.is_admin());
 drop policy if exists "receipt admin delete" on storage.objects;
-create policy "receipt admin delete" on storage.objects for delete to authenticated using (bucket_id = 'receipts' and is_admin());
+create policy "receipt admin delete" on storage.objects for delete to authenticated using (bucket_id = 'receipts' and public.is_admin());
 
 -- Reports and files: private bucket. The doctor manages everything; a patient can read the
 -- files listed in their own reports and upload into a folder named after their account.
@@ -587,7 +589,7 @@ values ('reports', 'reports', false, 10485760, array['image/jpeg','image/png','i
 on conflict (id) do update set public = false, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
 drop policy if exists "reports admin all" on storage.objects;
 create policy "reports admin all" on storage.objects for all to authenticated
-  using (bucket_id = 'reports' and is_admin()) with check (bucket_id = 'reports' and is_admin());
+  using (bucket_id = 'reports' and public.is_admin()) with check (bucket_id = 'reports' and public.is_admin());
 drop policy if exists "reports patient read" on storage.objects;
 create policy "reports patient read" on storage.objects for select to authenticated
   using (bucket_id = 'reports' and exists (select 1 from public.reports r where r.file_path = storage.objects.name and r.patient_user_id = auth.uid()));
@@ -595,3 +597,19 @@ drop policy if exists "reports patient upload" on storage.objects;
 create policy "reports patient upload" on storage.objects for insert to authenticated
   with check (bucket_id = 'reports' and split_part(name, '/', 1) = auth.uid()::text
               and exists (select 1 from public.patients p where p.user_id = auth.uid()));
+
+-- ---------- Booking alerts on the doctor's phone ----------
+-- Phones that asked for alerts (doctor app → Turn on alerts). Only admins can see or change them.
+create table if not exists push_subscriptions (
+  endpoint   text primary key,
+  p256dh     text not null,
+  auth       text not null,
+  user_id    uuid default auth.uid(),
+  created_at timestamptz not null default now()
+);
+alter table push_subscriptions enable row level security;
+drop policy if exists "admin manage push" on push_subscriptions;
+create policy "admin manage push" on push_subscriptions for all to authenticated using (public.is_admin()) with check (public.is_admin());
+
+-- The trigger that sends the alert needs the website address and a shared secret, so it is
+-- installed separately with supabase/booking-alerts.sql (fill in both values there).
